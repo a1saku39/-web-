@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>位置情報送信アプリ</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f4f8;
+        }
+
+        .container {
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+            margin-top: 10px;
+        }
+
+        #map {
+            height: 300px;
+            width: 100%;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            z-index: 1;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #statusMessage {
+            margin-top: 10px;
+            text-align: center;
+            min-height: 20px;
+            font-size: 14px;
+        }
+
+        .success {
+            color: green;
+        }
+
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>現在地送信アプリ</h1>
+
+        <!-- Initial Setup Screen -->
+        <div id="setupScreen" class="card">
+            <h2>初期設定</h2>
+            <div class="form-group">
+                <label for="userName">氏名 (カタカナ)</label>
+                <input type="text" id="userName" placeholder="ヤマダ タロウ">
+            </div>
+            <div class="form-group">
+                <label for="userPhone">電話番号</label>
+                <input type="tel" id="userPhone" placeholder="090-0000-0000">
+            </div>
+            <button class="btn btn-primary" onclick="saveSettings()">設定を保存</button>
+        </div>
+
+        <!-- Main Tracker Screen -->
+        <div id="trackerScreen" class="hidden">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <div>
+                        <strong>ユーザー:</strong> <span id="displayUserName"></span>
+                    </div>
+                    <button class="btn" style="width: auto; padding: 5px 10px; font-size: 12px; background: #eee;"
+                        onclick="resetSettings()">設定変更</button>
+                </div>
+
+                <div id="map"></div>
+
+                <button class="btn btn-success" id="sendLocationBtn" onclick="sendLocation()">現在地を送信</button>
+                <div id="statusMessage"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="mobile_tracker.js"></script>
+</body>
+
+</html>
