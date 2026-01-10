@@ -3,6 +3,7 @@ const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwRMlc_dUvUYZxLAqfi
 
 let map;
 let markersSource = []; // To store Leaflet markers
+let historyVisible = true; // Track history sidebar state
 
 document.addEventListener('DOMContentLoaded', () => {
     initMap();
@@ -10,6 +11,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('refreshBtn').addEventListener('click', fetchData);
 });
+
+// UI Functions
+function toggleMenu() {
+    document.getElementById('menuSidebar').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('show');
+}
+
+function closeMenu() {
+    document.getElementById('menuSidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('show');
+}
+
+function toggleHistory() {
+    const sidebar = document.getElementById('historySidebar');
+    historyVisible = !historyVisible;
+
+    if (historyVisible) {
+        sidebar.classList.remove('hidden');
+        // Show all markers
+        markersSource.forEach(marker => {
+            if (marker && map.hasLayer(marker) === false) {
+                marker.addTo(map);
+            }
+        });
+    } else {
+        sidebar.classList.add('hidden');
+        // Hide all markers
+        markersSource.forEach(marker => {
+            if (marker && map.hasLayer(marker)) {
+                map.removeLayer(marker);
+            }
+        });
+    }
+
+    // Resize map after sidebar animation
+    setTimeout(() => {
+        if (map) map.invalidateSize();
+    }, 300);
+
+    closeMenu();
+}
 
 function initMap() {
     // Default center (Tokyo)
@@ -21,9 +63,9 @@ function initMap() {
 }
 
 function fetchData() {
-    if (GAS_API_URL === "YOUR_SCRIPT_URL_HERE") {
+    if (!GAS_API_URL || GAS_API_URL.includes("YOUR_SCRIPT_URL")) {
         console.warn("GAS URL not set.");
-        alert("GASのURLが設定されていません。コード内のGAS_API_URLを書き換えてください。");
+        alert("GASのURLが設定されていません。コードを確認してください。");
         return;
     }
 
@@ -46,9 +88,6 @@ function fetchData() {
         .catch(error => {
             console.error("Fetch error:", error);
             // alert("データの取得に失敗しました: " + error.message); 
-            // Mock data for demo purposes if fetch fails (e.g. invalid URL)
-            console.log("Using mock data for demonstration...");
-            // renderData(mockData); 
         })
         .finally(() => {
             loading.style.display = 'none';
@@ -59,8 +98,12 @@ function renderData(data) {
     const listEl = document.getElementById('logList');
     listEl.innerHTML = '';
 
-    // Clear existing markers
-    markersSource.forEach(m => map.removeLayer(m));
+    // Clear existing markers from map
+    markersSource.forEach(m => {
+        if (map.hasLayer(m)) {
+            map.removeLayer(m);
+        }
+    });
     markersSource = [];
 
     if (data.length === 0) {
@@ -71,14 +114,18 @@ function renderData(data) {
     // Sort by timestamp descending
     data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-    const bounds = L.latLngBounds();
-
     data.forEach((item, index) => {
         // Skip if invalid lat/lng
         if (!item.lat || !item.lng) return;
 
         const date = new Date(item.timestamp);
         const timeStr = date.toLocaleString('ja-JP');
+        const messageText = item.message ? `<div class="log-message" style="font-size:0.85rem; color:#555; margin-top:4px; background:#f0f0f0; padding:4px; border-radius:4px;">${escapeHtml(item.message)}</div>` : "";
+
+        // Create marker but don't add to map yet
+        const popupContent = `<b>${escapeHtml(item.name)}</b><br>${timeStr}${item.message ? '<hr>' + escapeHtml(item.message) : ''}`;
+        const marker = L.marker([item.lat, item.lng])
+            .bindPopup(popupContent);
 
         // Add to list
         const li = document.createElement('li');
@@ -87,8 +134,23 @@ function renderData(data) {
             <div class="log-time">${timeStr}</div>
             <div class="log-name">${escapeHtml(item.name)}</div>
             <div class="log-phone">${escapeHtml(item.phone)}</div>
+            ${messageText}
         `;
+
         li.onclick = () => {
+            // Hide all markers first
+            markersSource.forEach(m => {
+                if (map.hasLayer(m)) {
+                    map.removeLayer(m);
+                }
+            });
+
+            // Show only the clicked marker
+            if (!map.hasLayer(marker)) {
+                marker.addTo(map);
+            }
+
+            // Fly to location and open popup
             map.flyTo([item.lat, item.lng], 16);
             marker.openPopup();
 
@@ -96,39 +158,18 @@ function renderData(data) {
             document.querySelectorAll('.log-item').forEach(el => el.classList.remove('active'));
             li.classList.add('active');
         };
+
         listEl.appendChild(li);
-
-        // Add marker
-        const marker = L.marker([item.lat, item.lng])
-            .addTo(map)
-            .bindPopup(`<b>${escapeHtml(item.name)}</b><br>${timeStr}`);
-
         markersSource.push(marker);
-        bounds.extend([item.lat, item.lng]);
-
-        // Highlight first item (latest) on map optionally?
-        if (index === 0) {
-            // marker.openPopup(); 
-        }
     });
-
-    if (markersSource.length > 0) {
-        map.fitBounds(bounds, { padding: [50, 50] });
-    }
 }
 
 function escapeHtml(text) {
     if (!text) return "";
-    return text
+    return text.toString()
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 }
-
-// Mock Data for testing layout
-const mockData = [
-    { timestamp: "2023-10-27T10:00:00.000Z", name: "山田 太郎", phone: "090-1111-2222", lat: 35.6895, lng: 139.6917 },
-    { timestamp: "2023-10-27T10:05:00.000Z", name: "鈴木 花子", phone: "080-3333-4444", lat: 35.6586, lng: 139.7454 },
-];

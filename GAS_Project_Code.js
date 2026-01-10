@@ -19,7 +19,8 @@ function doGet(e) {
             phone: row[2],
             type: row[3],
             lat: row[4],
-            lng: row[5]
+            lng: row[5],
+            message: row[6] ? row[6] : "" // Add message field (Column G)
         };
     });
 
@@ -35,29 +36,38 @@ function doGet(e) {
 }
 
 function doPost(e) {
-    // Handle CORS for POST (though complex with fetch, this is standard pattern)
-    // Incoming data is expected to be in the post body as a string.
-
     try {
         var params;
+        // Check if body content exists and parse it
         if (e.postData && e.postData.contents) {
             params = JSON.parse(e.postData.contents);
         } else {
-            // Fallback for form-encoded
             params = e.parameter;
         }
 
         var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
 
         // Prepare row data
-        var timestamp = params.timestamp || new Date().toISOString();
+        var timestamp;
+        if (params.timestamp) {
+            // Convert ISO string to Date object
+            var date = new Date(params.timestamp);
+            // Format as Japan time (JST, UTC+9)
+            timestamp = Utilities.formatDate(date, "Asia/Tokyo", "yyyy/MM/dd HH:mm:ss");
+        } else {
+            // If no timestamp provided, use current Japan time
+            timestamp = Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyy/MM/dd HH:mm:ss");
+        }
+
         var name = params.name || '';
         var phone = params.phone || '';
         var type = params.type || 'unknown';
         var lat = params.lat || '';
         var lng = params.lng || '';
+        var message = params.message || ''; // Get message
 
-        sheet.appendRow([timestamp, name, phone, type, lat, lng]);
+        // Append to spreadsheet (Column A to G)
+        sheet.appendRow([timestamp, name, phone, type, lat, lng, message]);
 
         return ContentService.createTextOutput(JSON.stringify({
             status: 'success',
@@ -76,5 +86,5 @@ function setupSheet() {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     // Clear and set headers
     sheet.clear();
-    sheet.appendRow(['Timestamp', 'Name', 'Phone', 'Type', 'Latitude', 'Longitude']);
+    sheet.appendRow(['Timestamp', 'Name', 'Phone', 'Type', 'Latitude', 'Longitude', 'Message']);
 }

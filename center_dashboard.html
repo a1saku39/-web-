@@ -19,6 +19,7 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
+            overflow: hidden;
         }
 
         header {
@@ -26,15 +27,25 @@
             padding: 15px 20px;
             box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            z-index: 10;
+            z-index: 1000;
+            position: relative;
+        }
+
+        .hamburger {
+            font-size: 24px;
+            cursor: pointer;
+            margin-right: 15px;
+            background: none;
+            border: none;
+            padding: 0;
         }
 
         h1 {
             margin: 0;
             font-size: 1.25rem;
             color: #1a1a1a;
+            flex-grow: 1;
         }
 
         .controls {
@@ -60,6 +71,64 @@
             background-color: #0056b3;
         }
 
+        /* Sidebar Menu */
+        .menu-sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background: #fff;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+            transition: left 0.3s ease;
+            z-index: 1100;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .menu-sidebar.open {
+            left: 0;
+        }
+
+        .menu-header {
+            padding: 20px;
+            background: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+
+        .menu-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .menu-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .menu-item:hover {
+            background: #f5f5f5;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1050;
+            display: none;
+        }
+
+        .overlay.show {
+            display: block;
+        }
+
         .main-content {
             flex: 1;
             display: flex;
@@ -72,6 +141,11 @@
             border-right: 1px solid #ddd;
             display: flex;
             flex-direction: column;
+            transition: margin-left 0.3s ease;
+        }
+
+        .sidebar.hidden {
+            margin-left: -350px;
         }
 
         .sidebar-header {
@@ -146,12 +220,115 @@
             z-index: 1000;
             display: none;
         }
+
+        /* Reception Screen */
+        .reception-screen {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: none;
+        }
+
+        .reception-screen.active {
+            display: block;
+        }
+
+        .reception-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .reception-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .reception-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .reception-info {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 10px 20px;
+            margin-bottom: 15px;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #666;
+        }
+
+        .info-value {
+            color: #333;
+        }
+
+        .btn-accept {
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .btn-accept:hover {
+            background-color: #218838;
+        }
+
+        .btn-accept:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status-accepted {
+            background-color: #d4edda;
+            color: #155724;
+        }
     </style>
 </head>
 
 <body>
 
+    <!-- Overlay for menu -->
+    <div id="overlay" class="overlay" onclick="closeMenu()"></div>
+
+    <!-- Menu Sidebar -->
+    <div id="menuSidebar" class="menu-sidebar">
+        <div class="menu-header">メニュー</div>
+        <ul class="menu-list">
+            <li class="menu-item" onclick="showReceptionScreen()">📥 受付画面</li>
+            <li class="menu-item" onclick="showMapScreen()">🗺️ 地図表示</li>
+            <li class="menu-item" onclick="toggleHistory()">📋 受信履歴の表示/非表示</li>
+        </ul>
+    </div>
+
     <header>
+        <button class="hamburger" onclick="toggleMenu()">☰</button>
         <h1>位置情報管理ダッシュボード</h1>
         <div class="controls">
             <button class="btn btn-primary" id="refreshBtn">更新</button>
@@ -159,7 +336,16 @@
     </header>
 
     <div class="main-content">
-        <div class="sidebar">
+        <!-- Reception Screen -->
+        <div class="reception-screen" id="receptionScreen">
+            <h2>受付管理</h2>
+            <div id="receptionList">
+                <!-- Reception cards will be injected here -->
+                <p style="text-align: center; color: #999; padding: 40px;">受付待ち項目はありません</p>
+            </div>
+        </div>
+
+        <div class="sidebar" id="historySidebar">
             <div class="sidebar-header">受信履歴</div>
             <ul class="log-list" id="logList">
                 <!-- Items will be injected here -->
@@ -169,7 +355,7 @@
 
         <div class="map-container">
             <div id="map"></div>
-            <div id="loading" class="loading-overlay">Read...</div>
+            <div id="loading" class="loading-overlay">読込中...</div>
         </div>
     </div>
 

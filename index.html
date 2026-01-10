@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>送迎管理システム</title>
+    <link rel="stylesheet" href="style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <h1>送迎管理</h1>
+                <div class="date-selector">
+                    <button class="icon-btn" id="prevDayBtn">◀</button>
+                    <input type="date" id="dateInput">
+                    <button class="icon-btn" id="nextDayBtn">▶</button>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="btn secondary" id="openCustomerBtn">👤 顧客管理</button>
+                <button class="btn secondary" id="openMasterBtn">⚙ マスタ管理</button>
+                <button class="btn primary">+ 新規予約</button>
+            </div>
+        </header>
+
+        <!-- Main Layout -->
+        <div class="scheduler-layout">
+            <!-- Sidebar (Requests) - Hidden in print -->
+            <aside class="sidebar-requests">
+                <h2>未配車リスト</h2>
+                <div class="request-card-placeholder">
+                    未配車の予約はありません
+                </div>
+            </aside>
+
+            <!-- Scheduler Grid -->
+            <main class="scheduler-container">
+                <!-- Timeline Header -->
+                <div class="timeline-header" id="timelineHeader">
+                    <!-- JS will populate -->
+                </div>
+
+                <!-- Timeline Grid -->
+                <div class="scheduler-grid" id="schedulerGrid">
+                    <!-- JS will populate -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Booking Modal -->
+    <div id="bookingModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>新規予約作成</h3>
+                <button class="icon-btn" id="closeModalBtn">✕</button>
+            </div>
+            <form id="bookingForm" class="modal-body">
+                <input type="hidden" id="editBookingId">
+
+                // Customer Selection
+                <div class="form-group" style="position:relative;">
+                    <label>顧客検索 (名前・電話番号)</label>
+                    <input type="text" id="customerSearchInput" placeholder="名前、カナ、電話番号で検索..." autocomplete="off">
+                    <div id="customerSearchResults" class="search-results-dropdown" style="display:none;"></div>
+                    <!-- Hidden select removed/commented out -->
+                    <!-- <select id="customerSelect">...</select> -->
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>担当車両 (ドライバー)</label>
+                        <select id="editVehicle">
+                            <!-- JS populated -->
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>利用者名</label>
+                        <input type="text" id="editPassenger" required>
+                    </div>
+                </div>
+
+                <div class="form-row" style="margin-bottom:8px">
+                    <div class="form-group">
+                        <label>要介護度</label>
+                        <select id="editCareLevel">
+                            <option value="">(未設定)</option>
+                            <option value="自立">自立</option>
+                            <option value="要支援1">要支援1</option>
+                            <option value="要支援2">要支援2</option>
+                            <option value="要介護1">要介護1</option>
+                            <option value="要介護2">要介護2</option>
+                            <option value="要介護3">要介護3</option>
+                            <option value="要介護4">要介護4</option>
+                            <option value="要介護5">要介護5</option>
+                        </select>
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <input type="checkbox" id="editWheelchair" style="width:auto; margin-right:8px;">
+                        <label for="editWheelchair" style="margin:0; font-weight:normal">車椅子利用</label>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>お迎え時刻</label>
+                        <input type="time" id="editStart" required>
+                    </div>
+                    <div class="form-group">
+                        <label>終了時刻</label>
+                        <input type="time" id="editEnd" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>お迎え先住所</label>
+                    <input type="text" id="editPickupLocation">
+                </div>
+
+                <div class="form-group">
+                    <label>送り先場所名称</label>
+                    <input type="text" id="editDestination">
+                </div>
+
+                <div class="form-group">
+                    <label>備考</label>
+                    <textarea id="editNote" rows="2"></textarea>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn danger" id="deleteBookingBtn" style="display:none">削除</button>
+                    <div><!-- Spacer --></div>
+                    <button type="submit" class="btn primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Master Management Modal (Driver & Vehicle only) -->
+    <div id="masterModal" class="modal-overlay hidden">
+        <div class="modal-content master-content">
+            <div class="modal-header">
+                <h3>マスタ管理</h3>
+                <button class="icon-btn" id="closeMasterBtn">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="driverTab">ドライバー管理</button>
+                    <button class="tab-btn" data-tab="vehicleTab">車両管理</button>
+                </div>
+
+                <!-- Driver Tab -->
+                <div id="driverTab" class="tab-content active">
+                    <div class="add-form-inline">
+                        <input type="text" id="newDriverName" placeholder="新しいドライバー名">
+                        <button class="btn primary small" id="addDriverBtn">追加</button>
+                    </div>
+                    <ul class="master-list" id="driverList">
+                        <!-- JS populated -->
+                    </ul>
+                </div>
+
+                <!-- Vehicle Tab -->
+                <div id="vehicleTab" class="tab-content">
+                    <div class="add-form-inline">
+                        <input type="text" id="newVehicleName" placeholder="新しい車両名">
+                        <button class="btn primary small" id="addVehicleBtn">追加</button>
+                    </div>
+                    <ul class="master-list" id="vehicleList">
+                        <!-- JS populated -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Management Modal (New Independent Modal) -->
+    <div id="customerModal" class="modal-overlay hidden">
+        <div class="modal-content master-content">
+            <div class="modal-header">
+                <h3>顧客管理</h3>
+                <button class="icon-btn" id="closeCustomerBtn">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="customer-form-stack">
+                    <h4>新規顧客登録</h4>
+                    <div class="form-row">
+                        <input type="text" id="newCustomerName" placeholder="氏名(必須)" style="flex:1">
+                        <input type="text" id="newCustomerKana" placeholder="フリガナ" style="flex:1">
+                    </div>
+                    <div class="form-row">
+                        <input type="text" id="newCustomerPhone" placeholder="電話番号" style="flex:1">
+                        <select id="newCustomerCare" style="flex:1">
+                            <option value="">介護度</option>
+                            <option value="自立">自立</option>
+                            <option value="要支援1">要支援1</option>
+                            <option value="要支援2">要支援2</option>
+                            <option value="要介護1">要介護1</option>
+                            <option value="要介護2">要介護2</option>
+                            <option value="要介護3">要介護3</option>
+                            <option value="要介護4">要介護4</option>
+                            <option value="要介護5">要介護5</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="newCustomerAddress" placeholder="住所(お迎え先)" style="width:100%">
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="newCustomerDestination" placeholder="よく行く送迎先" style="width:100%">
+                    </div>
+                    <div class="form-group" style="margin-bottom:8px">
+                        <input type="text" id="newCustomerExcludeDriver" placeholder="除外ドライバー(カンマ区切り)"
+                            style="width:100%">
+                    </div>
+                    <div class="form-group">
+                        <textarea id="newCustomerNote" placeholder="特記事項・メモ" rows="2" style="width:100%"></textarea>
+                    </div>
+                    <div class="form-group checkbox-group" style="padding-top:0; margin-bottom:12px">
+                        <input type="checkbox" id="newCustomerWheelchair" style="width:auto; margin-right:8px">
+                        <label for="newCustomerWheelchair" style="margin:0">車椅子利用</label>
+                    </div>
+                    <button class="btn primary full-width" id="addCustomerBtn">登録</button>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- Search for customer management list -->
+                <div class="form-group">
+                    <input type="text" id="manageCustomerSearch" placeholder="登録済み顧客を検索..." style="width:100%">
+                </div>
+
+                <ul class="master-list" id="customerList">
+                    <!-- JS populated -->
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
