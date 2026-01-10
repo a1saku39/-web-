@@ -8,8 +8,12 @@ let historyVisible = true; // Track history sidebar state
 document.addEventListener('DOMContentLoaded', () => {
     initMap();
     fetchData();
+    fetchReceptionData(); // Load reception data on startup
 
-    document.getElementById('refreshBtn').addEventListener('click', fetchData);
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+        fetchData();
+        fetchReceptionData();
+    });
 });
 
 // UI Functions
@@ -29,20 +33,8 @@ function toggleHistory() {
 
     if (historyVisible) {
         sidebar.classList.remove('hidden');
-        // Show all markers
-        markersSource.forEach(marker => {
-            if (marker && map.hasLayer(marker) === false) {
-                marker.addTo(map);
-            }
-        });
     } else {
         sidebar.classList.add('hidden');
-        // Hide all markers
-        markersSource.forEach(marker => {
-            if (marker && map.hasLayer(marker)) {
-                map.removeLayer(marker);
-            }
-        });
     }
 
     // Resize map after sidebar animation
@@ -51,6 +43,96 @@ function toggleHistory() {
     }, 300);
 
     closeMenu();
+}
+
+function toggleReception() {
+    const panel = document.getElementById('receptionPanel');
+    panel.classList.toggle('hidden');
+
+    // Resize map after animation
+    setTimeout(() => {
+        if (map) map.invalidateSize();
+    }, 300);
+
+    closeMenu();
+
+    // Load data if showing panel
+    if (!panel.classList.contains('hidden')) {
+        fetchReceptionData();
+    }
+}
+
+function fetchReceptionData() {
+    if (!GAS_API_URL || GAS_API_URL.includes("YOUR_SCRIPT_URL")) {
+        return;
+    }
+
+    fetch(GAS_API_URL)
+        .then(response => response.json())
+        .then(json => {
+            if (json.status === 'success' && Array.isArray(json.data)) {
+                renderReceptionData(json.data);
+            }
+        })
+        .catch(error => {
+            console.error("Reception fetch error:", error);
+        });
+}
+
+function renderReceptionData(data) {
+    const listEl = document.getElementById('receptionList');
+    listEl.innerHTML = '';
+
+    if (data.length === 0) {
+        listEl.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">受付待ち項目はありません</p>';
+        return;
+    }
+
+    // Sort by timestamp descending (newest first)
+    data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    data.forEach((item, index) => {
+        const date = new Date(item.timestamp);
+        const timeStr = date.toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+        const card = document.createElement('div');
+        card.className = 'reception-card';
+        card.innerHTML = `
+            <h4>${escapeHtml(item.name)}<span class="status-badge">受付待ち</span></h4>
+            <div class="reception-info">
+                <div>
+                    <span class="info-label">受信日時:</span>
+                    <span class="info-value">${timeStr}</span>
+                </div>
+                <div>
+                    <span class="info-label">電話番号:</span>
+                    <span class="info-value">${escapeHtml(item.phone)}</span>
+                </div>
+                ${item.message ? `
+                <div>
+                    <span class="info-label">メッセージ:</span>
+                    <span class="info-value">${escapeHtml(item.message)}</span>
+                </div>
+                ` : ''}
+            </div>
+            <button class="btn-accept" onclick="acceptReception('${escapeHtml(item.name)}', ${item.lat}, ${item.lng})">
+                受付する
+            </button>
+        `;
+
+        listEl.appendChild(card);
+    });
+}
+
+function acceptReception(name, lat, lng) {
+    if (confirm(`${name} さんの位置情報を受付しますか？`)) {
+        // Show on map
+        if (lat && lng) {
+            map.flyTo([lat, lng], 16);
+        }
+        alert('受付しました');
+        fetchReceptionData(); // Refresh the list
+    }
 }
 
 function initMap() {
@@ -87,7 +169,6 @@ function fetchData() {
         })
         .catch(error => {
             console.error("Fetch error:", error);
-            // alert("データの取得に失敗しました: " + error.message); 
         })
         .finally(() => {
             loading.style.display = 'none';
