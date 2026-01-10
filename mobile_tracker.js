@@ -1,12 +1,9 @@
-// IMPORTANT: Replace this URL with your deployed Google Apps Script Web App URL
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwRMlc_dUvUYZxLAqfiRLBmRkqax25R64SYHw2e8_V9Dj52_3371zVrpcY8wgSjQXs/exec";
 
 let map;
 let marker;
-// Global variables to store the current selected location
 let currentLat;
 let currentLng;
-// Variables for visual guide
 let gpsLat;
 let gpsLng;
 let gpsCircle;
@@ -14,10 +11,8 @@ let connectionLine;
 
 document.addEventListener('DOMContentLoaded', () => {
     checkSettings();
-    document.getElementById('displayUserName').style.display = 'none'; // Hide if present by default just in case, though removed from HTML
 });
 
-// UI Functions
 function toggleMenu() {
     document.getElementById('sidebar').classList.toggle('open');
     document.getElementById('overlay').classList.toggle('show');
@@ -33,7 +28,6 @@ function showPage(pageId) {
     document.getElementById('accountScreen').classList.add('hidden');
     document.getElementById(pageId).classList.remove('hidden');
 
-    // Refresh map size if showing tracker and map is initialized
     if (pageId === 'trackerScreen' && map) {
         setTimeout(() => map.invalidateSize(), 100);
     }
@@ -46,7 +40,6 @@ function checkSettings() {
     const phone = localStorage.getItem('tracker_userPhone');
 
     if (name && phone) {
-        // Populate Account Info
         const nameEl = document.getElementById('infoName');
         const phoneEl = document.getElementById('infoPhone');
         if (nameEl) nameEl.textContent = name;
@@ -60,13 +53,8 @@ function checkSettings() {
         document.getElementById('trackerScreen').classList.add('hidden');
         document.getElementById('accountScreen').classList.add('hidden');
 
-        // Hide UI elements not needed for setup
         const header = document.querySelector('header');
         if (header) header.style.display = 'none';
-
-        // Also hide hamburger if on setup screen
-        const hamburger = document.querySelector('.hamburger');
-        if (hamburger) hamburger.style.display = 'none';
     }
 }
 
@@ -84,7 +72,6 @@ function saveSettings() {
     localStorage.setItem('tracker_userName', name);
     localStorage.setItem('tracker_userPhone', phone);
 
-    // Register to Spreadsheet
     sendDataToGAS({
         type: 'register',
         name: name,
@@ -92,11 +79,8 @@ function saveSettings() {
         timestamp: new Date().toISOString()
     });
 
-    // Restore header
     const header = document.querySelector('header');
     if (header) header.style.display = 'flex';
-    const hamburger = document.querySelector('.hamburger');
-    if (hamburger) hamburger.style.display = 'block';
 
     checkSettings();
 }
@@ -112,14 +96,12 @@ function resetSettings() {
 function initMap() {
     if (map) return;
 
-    // Default view (Tokyo) before GPS
     map = L.map('map').setView([35.6895, 139.6917], 13);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
 
-    // Map click listener to move marker
     map.on('click', function (e) {
         updateMapLocation(e.latlng.lat, e.latlng.lng);
     });
@@ -134,7 +116,6 @@ function refreshLocation() {
     status.textContent = "現在地を取得中...";
     status.className = "";
 
-    // Ensure map is initialized
     if (!map) {
         status.textContent = "マップが初期化されていません";
         status.className = "error";
@@ -144,11 +125,9 @@ function refreshLocation() {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             (position) => {
-                // Save original GPS location
                 gpsLat = position.coords.latitude;
                 gpsLng = position.coords.longitude;
 
-                // Visual indicator for "Actual GPS Position" (Blue dot)
                 if (gpsCircle) map.removeLayer(gpsCircle);
                 gpsCircle = L.circleMarker([gpsLat, gpsLng], {
                     radius: 6,
@@ -159,7 +138,6 @@ function refreshLocation() {
                     fillOpacity: 1
                 }).addTo(map).bindPopup("GPS取得位置");
 
-                // Initialize marker at GPS location
                 updateMapLocation(gpsLat, gpsLng);
 
                 status.textContent = "現在地を更新しました";
@@ -193,7 +171,6 @@ function updateMapLocation(lat, lng) {
             .bindPopup('住所を取得中...')
             .openPopup();
 
-        // Marker drag listener
         marker.on('dragend', function (event) {
             const position = marker.getLatLng();
             currentLat = position.lat;
@@ -203,7 +180,6 @@ function updateMapLocation(lat, lng) {
     }
     updateConnectionLine();
 
-    // Fetch address
     fetchAddress(lat, lng);
 }
 
@@ -214,25 +190,22 @@ function fetchAddress(lat, lng) {
     fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
         .then(response => response.json())
         .then(data => {
-            // Format Japanese address nicely
             let address;
             if (data.address) {
                 const addr = data.address;
-                // Build Japanese-style address
                 const parts = [
                     addr.state || addr.province,
                     addr.city || addr.town || addr.village,
                     addr.suburb || addr.neighbourhood,
                     addr.road,
                     addr.house_number
-                ].filter(Boolean); // Remove undefined/null values
+                ].filter(Boolean);
 
                 address = parts.join('') || data.display_name;
             } else {
                 address = data.display_name;
             }
 
-            // Remove country name if present
             address = address.replace(/,?\s*日本\s*$/g, '').replace(/,?\s*Japan\s*$/gi, '');
 
             if (marker) {
@@ -262,7 +235,7 @@ function updateConnectionLine() {
             color: '#4285F4',
             weight: 3,
             opacity: 0.6,
-            dashArray: '5, 10' // Dotted line effect
+            dashArray: '5, 10'
         }).addTo(map);
     }
 }
@@ -270,16 +243,13 @@ function updateConnectionLine() {
 function sendLocation() {
     const btn = document.getElementById('sendLocationBtn');
     const status = document.getElementById('statusMessage');
-    const messageInput = document.getElementById('userMessage'); // Get message input
+    const messageInput = document.getElementById('userMessage');
 
-    // Disable button to prevent double send
     btn.disabled = true;
     status.textContent = "送信準備中...";
     status.className = "";
 
-    // Check if we have a location
     if (typeof currentLat === 'undefined' || typeof currentLng === 'undefined') {
-        // Try getting GPS one last time if not set
         if (!navigator.geolocation) {
             status.textContent = "位置情報が設定されていません";
             status.className = "error";
@@ -289,7 +259,6 @@ function sendLocation() {
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 updateMapLocation(position.coords.latitude, position.coords.longitude);
-                // Retry sending
                 sendLocation();
             },
             (error) => {
@@ -311,7 +280,7 @@ function sendLocation() {
         phone: phone,
         lat: currentLat,
         lng: currentLng,
-        message: message, // Include message
+        message: message,
         timestamp: new Date().toISOString()
     };
 
@@ -322,7 +291,7 @@ function sendLocation() {
             if (success) {
                 status.textContent = "送信完了 (" + new Date().toLocaleTimeString() + ")";
                 status.className = "success";
-                if (messageInput) messageInput.value = ""; // Clear message
+                if (messageInput) messageInput.value = "";
             } else {
                 status.textContent = "送信に失敗しました。通信環境を確認してください。";
                 status.className = "error";

@@ -54,8 +54,6 @@
             padding-right: 24px;
         }
 
-        /* padding-right to balance hamburger */
-
         /* Sidebar */
         .sidebar {
             position: fixed;
@@ -165,17 +163,6 @@
             color: white;
         }
 
-        .btn-secondary {
-            background-color: #6c757d;
-            color: white;
-        }
-
-        .btn-danger {
-            background-color: #dc3545;
-            color: white;
-        }
-
-        /* Map & Status */
         #map {
             height: 350px;
             width: 100%;
@@ -213,7 +200,6 @@
             display: none !important;
         }
 
-        /* Account Info View */
         .info-row {
             margin-bottom: 15px;
             border-bottom: 1px solid #eee;
@@ -236,10 +222,8 @@
 
 <body>
 
-    <!-- Overlay for sidebar -->
     <div id="overlay" class="overlay" onclick="closeMenu()"></div>
 
-    <!-- Sidebar -->
     <div id="sidebar" class="sidebar">
         <div class="sidebar-header">メニュー</div>
         <ul class="menu-list">
@@ -255,7 +239,6 @@
     </header>
 
     <div class="container">
-        <!-- Initial Setup Screen -->
         <div id="setupScreen" class="card hidden">
             <h2>初期設定</h2>
             <div class="form-group">
@@ -269,19 +252,17 @@
             <button class="btn btn-primary" onclick="saveSettings()">設定を保存</button>
         </div>
 
-        <!-- Main Tracker Screen -->
         <div id="trackerScreen" class="hidden">
             <div class="card">
-                <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
                     <button class="btn"
                         style="width: auto; padding: 5px 10px; font-size: 12px; background: #28a745; color: white;"
                         onclick="refreshLocation()">📍 現在地更新</button>
                 </div>
+
                 <div id="map"></div>
 
-                <p id="addressDisplay">
-                    📍 位置を指定するとここに住所が表示されます
-                </p>
+                <p id="addressDisplay">📍 位置を指定するとここに住所が表示されます</p>
 
                 <div class="form-group">
                     <label for="userMessage">メッセージ (任意)</label>
@@ -293,7 +274,6 @@
             </div>
         </div>
 
-        <!-- Account Info Screen -->
         <div id="accountScreen" class="hidden">
             <div class="card">
                 <h2>アカウント情報</h2>

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>位置情報管理センター</title>
+    <title>スマホweb受付ダッシュボード</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <link
@@ -149,6 +149,20 @@
             margin-left: -380px;
         }
 
+        /* History Sidebar */
+        .sidebar {
+            width: 350px;
+            background: white;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            transition: margin-left 0.3s ease;
+        }
+
+        .sidebar.hidden {
+            margin-left: -350px;
+        }
+
         .panel-header {
             padding: 15px;
             border-bottom: 1px solid #eee;
@@ -225,27 +239,6 @@
             margin-left: 8px;
         }
 
-        /* History Sidebar */
-        .sidebar {
-            width: 350px;
-            background: white;
-            border-right: 1px solid #ddd;
-            display: flex;
-            flex-direction: column;
-            transition: margin-left 0.3s ease;
-        }
-
-        .sidebar.hidden {
-            margin-left: -350px;
-        }
-
-        .sidebar-header {
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-            font-weight: bold;
-            background: #fafafa;
-        }
-
         .log-list {
             flex: 1;
             overflow-y: auto;
@@ -316,10 +309,8 @@
 
 <body>
 
-    <!-- Overlay for menu -->
     <div id="overlay" class="overlay" onclick="closeMenu()"></div>
 
-    <!-- Menu Sidebar -->
     <div id="menuSidebar" class="menu-sidebar">
         <div class="menu-header">メニュー</div>
         <ul class="menu-list">
@@ -330,30 +321,27 @@
 
     <header>
         <button class="hamburger" onclick="toggleMenu()">☰</button>
-        <h1>位置情報管理ダッシュボード</h1>
+        <h1>スマホweb受付ダッシュボード</h1>
         <div class="controls">
             <button class="btn btn-primary" id="refreshBtn">更新</button>
         </div>
     </header>
 
     <div class="main-content">
-        <!-- Reception Panel -->
-        <div class="reception-panel" id="receptionPanel">
+        <div class="reception-panel hidden" id="receptionPanel">
             <div class="panel-header">受付管理</div>
             <div class="reception-content" id="receptionList">
                 <p style="text-align: center; color: #999; padding: 20px;">受付待ち項目はありません</p>
             </div>
         </div>
 
-        <!-- History Sidebar -->
-        <div class="sidebar" id="historySidebar">
-            <div class="sidebar-header">受信履歴</div>
+        <div class="sidebar hidden" id="historySidebar">
+            <div class="panel-header">受信履歴</div>
             <ul class="log-list" id="logList">
                 <li style="padding: 20px; text-align: center; color: #999;">データなし</li>
             </ul>
         </div>
 
-        <!-- Map Container -->
         <div class="map-container">
             <div id="map"></div>
             <div id="loading" class="loading-overlay">読込中...</div>

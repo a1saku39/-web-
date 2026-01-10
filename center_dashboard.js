@@ -1,14 +1,12 @@
-// IMPORTANT: Replace this URL with your deployed Google Apps Script Web App URL
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwRMlc_dUvUYZxLAqfiRLBmRkqax25R64SYHw2e8_V9Dj52_3371zVrpcY8wgSjQXs/exec";
 
 let map;
-let markersSource = []; // To store Leaflet markers
-let historyVisible = true; // Track history sidebar state
+let markersSource = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     initMap();
     fetchData();
-    fetchReceptionData(); // Load reception data on startup
+    fetchReceptionData();
 
     document.getElementById('refreshBtn').addEventListener('click', () => {
         fetchData();
@@ -16,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// UI Functions
 function toggleMenu() {
     document.getElementById('menuSidebar').classList.toggle('open');
     document.getElementById('overlay').classList.toggle('show');
@@ -29,15 +26,14 @@ function closeMenu() {
 
 function toggleHistory() {
     const sidebar = document.getElementById('historySidebar');
-    historyVisible = !historyVisible;
+    const isHidden = sidebar.classList.contains('hidden');
 
-    if (historyVisible) {
+    if (isHidden) {
         sidebar.classList.remove('hidden');
     } else {
         sidebar.classList.add('hidden');
     }
 
-    // Resize map after sidebar animation
     setTimeout(() => {
         if (map) map.invalidateSize();
     }, 300);
@@ -47,19 +43,20 @@ function toggleHistory() {
 
 function toggleReception() {
     const panel = document.getElementById('receptionPanel');
-    panel.classList.toggle('hidden');
+    const isHidden = panel.classList.contains('hidden');
 
-    // Resize map after animation
+    if (isHidden) {
+        panel.classList.remove('hidden');
+        fetchReceptionData();
+    } else {
+        panel.classList.add('hidden');
+    }
+
     setTimeout(() => {
         if (map) map.invalidateSize();
     }, 300);
 
     closeMenu();
-
-    // Load data if showing panel
-    if (!panel.classList.contains('hidden')) {
-        fetchReceptionData();
-    }
 }
 
 function fetchReceptionData() {
@@ -88,7 +85,6 @@ function renderReceptionData(data) {
         return;
     }
 
-    // Sort by timestamp descending (newest first)
     data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     data.forEach((item, index) => {
@@ -126,17 +122,32 @@ function renderReceptionData(data) {
 
 function acceptReception(name, lat, lng) {
     if (confirm(`${name} さんの位置情報を受付しますか？`)) {
-        // Show on map
         if (lat && lng) {
+            // Remove all existing markers
+            markersSource.forEach(m => {
+                if (map.hasLayer(m)) {
+                    map.removeLayer(m);
+                }
+            });
+
+            // Create and add marker for accepted location
+            const marker = L.marker([lat, lng])
+                .addTo(map)
+                .bindPopup(`<b>${name}</b><br>受付済み`)
+                .openPopup();
+
+            // Add to markers array
+            markersSource.push(marker);
+
+            // Fly to location
             map.flyTo([lat, lng], 16);
         }
         alert('受付しました');
-        fetchReceptionData(); // Refresh the list
+        fetchReceptionData();
     }
 }
 
 function initMap() {
-    // Default center (Tokyo)
     map = L.map('map').setView([35.6895, 139.6917], 12);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -179,7 +190,6 @@ function renderData(data) {
     const listEl = document.getElementById('logList');
     listEl.innerHTML = '';
 
-    // Clear existing markers from map
     markersSource.forEach(m => {
         if (map.hasLayer(m)) {
             map.removeLayer(m);
@@ -192,23 +202,19 @@ function renderData(data) {
         return;
     }
 
-    // Sort by timestamp descending
     data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     data.forEach((item, index) => {
-        // Skip if invalid lat/lng
         if (!item.lat || !item.lng) return;
 
         const date = new Date(item.timestamp);
         const timeStr = date.toLocaleString('ja-JP');
         const messageText = item.message ? `<div class="log-message" style="font-size:0.85rem; color:#555; margin-top:4px; background:#f0f0f0; padding:4px; border-radius:4px;">${escapeHtml(item.message)}</div>` : "";
 
-        // Create marker but don't add to map yet
         const popupContent = `<b>${escapeHtml(item.name)}</b><br>${timeStr}${item.message ? '<hr>' + escapeHtml(item.message) : ''}`;
         const marker = L.marker([item.lat, item.lng])
             .bindPopup(popupContent);
 
-        // Add to list
         const li = document.createElement('li');
         li.className = 'log-item';
         li.innerHTML = `
@@ -219,23 +225,19 @@ function renderData(data) {
         `;
 
         li.onclick = () => {
-            // Hide all markers first
             markersSource.forEach(m => {
                 if (map.hasLayer(m)) {
                     map.removeLayer(m);
                 }
             });
 
-            // Show only the clicked marker
             if (!map.hasLayer(marker)) {
                 marker.addTo(map);
             }
 
-            // Fly to location and open popup
             map.flyTo([item.lat, item.lng], 16);
             marker.openPopup();
 
-            // Highlight list item
             document.querySelectorAll('.log-item').forEach(el => el.classList.remove('active'));
             li.classList.add('active');
         };
