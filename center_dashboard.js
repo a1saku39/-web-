@@ -4,6 +4,7 @@ let map;
 let markersSource = [];
 
 document.addEventListener('DOMContentLoaded', () => {
+    document.title = "スマホweb受付ダッシュボード";
     initMap();
     fetchData();
     fetchReceptionData();
