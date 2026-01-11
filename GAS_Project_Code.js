@@ -21,7 +21,9 @@ function doGet(e) {
                 lng: row[5],
                 message: row[6] ? row[6] : "",
                 status: row[7] ? row[7] : "受付待ち",
-                reply: row[8] ? row[8] : ""
+                reply: row[8] ? row[8] : "",
+                acceptedTimestamp: row[9] ? row[9] : "",
+                sentTimestamp: row[10] ? row[10] : ""
             };
         });
 
@@ -71,10 +73,17 @@ function doPost(e) {
             if (params.action === 'updateStatus') {
                 var newStatus = params.status || '受付済み';
                 sheet.getRange(rowId, 8).setValue(newStatus);
+                // 受付待ちまたは受付済みになったら日時を記録
+                if (newStatus === '受付待ち' || newStatus === '受付済み') {
+                    var now = Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyy/MM/dd HH:mm:ss");
+                    sheet.getRange(rowId, 10).setValue(now);
+                }
             }
             if (params.reply) {
+                var now = Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyy/MM/dd HH:mm:ss");
                 sheet.getRange(rowId, 9).setValue(params.reply);
                 sheet.getRange(rowId, 8).setValue('返信済み');
+                sheet.getRange(rowId, 11).setValue(now); // 送信日時を記録
             }
             return ContentService.createTextOutput(JSON.stringify({
                 status: 'success',
@@ -109,5 +118,5 @@ function doPost(e) {
 function setupSheet() {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     sheet.clear();
-    sheet.appendRow(['Timestamp', 'Name', 'Phone', 'Type', 'Latitude', 'Longitude', 'Message', 'Status', 'Reply']);
+    sheet.appendRow(['Timestamp', 'Name', 'Phone', 'Type', 'Latitude', 'Longitude', 'Message', 'Status', 'Reply', 'AcceptedTimestamp', 'SentTimestamp']);
 }

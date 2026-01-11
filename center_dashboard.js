@@ -79,14 +79,20 @@ function renderReceptionData(data) {
         const isAccepted = item.status === '受付済み';
 
         const card = document.createElement('div');
+        const acceptedTimeStr = item.acceptedTimestamp ? new Date(item.acceptedTimestamp).toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
+        const sentTimeStr = item.sentTimestamp ? new Date(item.sentTimestamp).toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
+        const isSent = item.status === '返信済み';
+
         card.className = 'reception-card';
         card.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:10px;">
                 <h4 style="margin:0;">${escapeHtml(item.name)}</h4>
-                <span class="status-badge ${isAccepted ? 'status-accepted' : 'status-pending'}">${item.status}</span>
+                <span class="status-badge ${isSent ? 'status-accepted' : (isAccepted ? 'status-pending' : 'status-waiting')}">${item.status}</span>
             </div>
             <div class="reception-info">
                 <div><span class="info-label">受信日時:</span><span class="info-value">${timeStr}</span></div>
+                <div><span class="info-label">受付日時:</span><span class="info-value">${acceptedTimeStr}</span></div>
+                ${isSent ? `<div><span class="info-label">送信日時:</span><span class="info-value">${sentTimeStr}</span></div>` : ''}
                 <div><span class="info-label">電話番号:</span><span class="info-value">${escapeHtml(item.phone)}</span></div>
                 ${item.message ? `<div><span class="info-label">メッセージ:</span><span class="info-value">${escapeHtml(item.message)}</span></div>` : ''}
                 ${item.reply ? `<div style="margin-top:8px; display:block;"><span class="info-label">返信済み:</span><div class="info-value" style="background:#e8f4fd; padding:12px; border-radius:4px; font-size:0.85rem; border-left: 3px solid #007bff;">${escapeHtml(item.reply)}</div></div>` : ''}

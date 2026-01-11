@@ -203,11 +203,31 @@
             border-bottom: 2px solid #81d4fa;
         }
 
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            cursor: pointer;
+            margin-left: auto;
+            color: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .close-btn:hover {
+            opacity: 1;
+        }
+
         .panel-header {
             padding: 15px;
             border-bottom: 1px solid #eee;
             font-weight: bold;
             background: #fafafa;
+            display: flex;
+            align-items: center;
         }
 
         .reception-content {
@@ -373,6 +393,7 @@
             <!-- 受付管理 (未対応) -->
             <div class="section-header header-waiting">
                 <span>📥 受付管理 (未対応)</span>
+                <button class="close-btn" onclick="toggleReception()">×</button>
             </div>
             <div class="reception-content" id="receptionWaitingList">
                 <p style="text-align: center; color: #999; padding: 20px;">未対応の項目はありません</p>
@@ -390,6 +411,7 @@
         <div class="sent-panel hidden" id="sentPanel">
             <div class="section-header header-sent">
                 <span>✉ 送信済み管理 (返信完了)</span>
+                <button class="close-btn" onclick="toggleSentPanel()">×</button>
             </div>
             <div class="reception-content" id="sentMessageList">
                 <p style="text-align: center; color: #999; padding: 20px;">送信済みの項目はありません</p>
@@ -397,7 +419,10 @@
         </div>
 
         <div class="sidebar hidden" id="historySidebar">
-            <div class="panel-header">受信履歴</div>
+            <div class="panel-header">
+                <span>受信履歴</span>
+                <button class="close-btn" onclick="toggleHistory()">×</button>
+            </div>
             <ul class="log-list" id="logList">
                 <li style="padding: 20px; text-align: center; color: #999;">データなし</li>
             </ul>
