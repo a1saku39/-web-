@@ -13,6 +13,12 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchData();
         fetchReceptionData();
     });
+
+    // 10秒おきに自動更新
+    setInterval(() => {
+        fetchData();
+        fetchReceptionData();
+    }, 10000);
 });
 
 function toggleMenu() {
@@ -83,12 +89,13 @@ function renderReceptionData(data) {
         const sentTimeStr = item.sentTimestamp ? new Date(item.sentTimestamp).toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
         const isSent = item.status === '返信済み';
         const isRejected = item.status === '却下済み';
+        const displayStatus = isRejected ? 'キャンセル' : item.status;
 
         card.className = 'reception-card';
         card.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:10px;">
                 <h4 style="margin:0;">${escapeHtml(item.name)}</h4>
-                <span class="status-badge ${isSent ? 'status-accepted' : (isRejected ? 'status-waiting' : (isAccepted ? 'status-pending' : 'status-waiting'))}">${item.status}</span>
+                <span class="status-badge ${isSent ? 'status-accepted' : (isRejected ? 'status-canceled' : (isAccepted ? 'status-pending' : 'status-waiting'))}">${displayStatus}</span>
             </div>
             <div class="reception-info">
                 <div><span class="info-label">受信日時:</span><span class="info-value">${timeStr}</span></div>
