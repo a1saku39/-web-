@@ -121,6 +121,7 @@ function renderReceptionData(data) {
     // 並び替え（最新順）
     waitingData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     acceptedData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    processedData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     // 受付待ちを描画
     if (waitingData.length === 0) {
