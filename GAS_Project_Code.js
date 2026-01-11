@@ -69,7 +69,8 @@ function doPost(e) {
         if (params.action === 'updateStatus' || params.action === 'sendReply') {
             var rowId = params.rowId;
             if (params.action === 'updateStatus') {
-                sheet.getRange(rowId, 8).setValue('受付済み');
+                var newStatus = params.status || '受付済み';
+                sheet.getRange(rowId, 8).setValue(newStatus);
             }
             if (params.reply) {
                 sheet.getRange(rowId, 9).setValue(params.reply);
@@ -87,7 +88,7 @@ function doPost(e) {
         var lat = params.lat || '';
         var lng = params.lng || '';
         var message = params.message || '';
-        var status = '受付待ち';
+        var status = '未承認';
 
         sheet.appendRow([timestamp, name, phone, type, lat, lng, message, status, ""]);
 

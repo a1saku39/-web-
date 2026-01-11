@@ -60,7 +60,7 @@ function renderReceptionData(data) {
     waitingListEl.innerHTML = '';
     acceptedListEl.innerHTML = '';
 
-    const waitingData = data.filter(item => item.status !== '受付済み');
+    const waitingData = data.filter(item => item.status === '受付待ち');
     const acceptedData = data.filter(item => item.status === '受付済み');
 
     // 共通のカード生成関数
@@ -195,22 +195,53 @@ function renderData(data) {
         const messageText = item.message ? `<div style="font-size:0.8rem; color:#666; background:#f0f0f0; padding:4px; margin-top:4px;">${escapeHtml(item.message)}</div>` : "";
         const replyText = item.reply ? `<div style="font-size:0.8rem; color:#0e5a9c; background:#e8f4fd; padding:4px; margin-top:4px; border-left: 2px solid #007bff;">[返答]: ${escapeHtml(item.reply)}</div>` : "";
 
+        const statusBadge = `<span style="float:right; font-size:0.75rem; color:${item.status === '受付済み' ? '#28a745' : (item.status === '未承認' ? '#666' : '#856404')}">${item.status}</span>`;
+
         const li = document.createElement('li');
         li.className = 'log-item';
         li.innerHTML = `
-            <div class="log-time">${timeStr} <span style="float:right; font-size:0.75rem; color:${item.status === '受付済み' ? '#28a745' : '#856404'}">${item.status}</span></div>
+            <div class="log-time">${timeStr} ${statusBadge}</div>
             <div class="log-name">${escapeHtml(item.name)}</div>
             ${messageText}
             ${replyText}
+            ${item.status === '未承認' ? `
+                <div style="margin-top:10px; display:flex; gap:5px;">
+                    <button class="btn" style="flex:1; padding:4px; background:#007bff; color:white; font-size:0.8rem;" onclick="event.stopPropagation(); moveRequestedToWaiting(${item.rowId}, '${escapeHtml(item.name)}')">管理へ送る</button>
+                    <button class="btn" style="flex:0.5; padding:4px; background:#6c757d; color:white; font-size:0.8rem;" onclick="event.stopPropagation(); hideRequest(${item.rowId})">却下</button>
+                </div>
+            ` : ''}
         `;
         li.onclick = () => {
-            markersSource.forEach(m => { if (map.hasLayer(m)) map.removeLayer(m); });
-            const marker = L.marker([item.lat, item.lng]).addTo(map).bindPopup(`<b>${escapeHtml(item.name)}</b><br>${item.reply ? '返信済: ' + escapeHtml(item.reply) : '受付済'}`).openPopup();
-            markersSource.push(marker);
-            map.flyTo([item.lat, item.lng], 16);
+            focusOnMap(item.lat, item.lng, item.name, item.reply);
         };
         listEl.appendChild(li);
     });
+}
+
+// 履歴から「受付管理」へ移動させる
+async function moveRequestedToWaiting(rowId, name) {
+    if (confirm(`${name} さんの依頼を受付管理へ移動しますか？`)) {
+        await fetch(GAS_API_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify({ action: 'updateStatus', rowId: rowId, status: '受付待ち' })
+        });
+        alert('管理画面へ移動しました');
+        fetchData();
+        fetchReceptionData();
+    }
+}
+
+// 却下（非表示にするためのステータス変更）
+async function hideRequest(rowId) {
+    if (confirm(`この依頼を却下（非表示）にしますか？`)) {
+        await fetch(GAS_API_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify({ action: 'updateStatus', rowId: rowId, status: '却下済み' })
+        });
+        fetchData();
+    }
 }
 
 function escapeHtml(text) {
