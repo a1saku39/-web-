@@ -105,20 +105,22 @@ async function checkReplies() {
                     listEl.appendChild(myMsg);
                 }
 
-                // センターからの返信
+                // 自分の送ったメッセージ (あれば)
+                if (item.message) {
+                    const myMsg = document.createElement('div');
+                    myMsg.style.cssText = "align-self: flex-end; background: #dcf8c6; padding: 8px 12px; border-radius: 12px 12px 0 12px; max-width: 85%; font-size: 0.9rem; box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin-bottom: 5px;";
+                    myMsg.innerHTML = `<div style="font-size: 0.7rem; color: #777; margin-bottom: 2px;">送信済み - ${timeStr}</div><div>${escapeHtml(item.message)}</div>`;
+                    listEl.appendChild(myMsg.cloneNode(true));
+                    fullListEl.appendChild(myMsg);
+                }
+
+                // センターからの返信 (あれば)
                 if (item.reply) {
                     const replyMsg = document.createElement('div');
                     replyMsg.style.cssText = "align-self: flex-start; background: #e8f4fd; padding: 8px 12px; border-radius: 12px 12px 12px 0; max-width: 85%; font-size: 0.9rem; border-left: 4px solid #007bff; box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin-top: 5px; margin-bottom: 5px;";
                     replyMsg.innerHTML = `<div style="font-size: 0.7rem; color: #007bff; font-weight: bold; margin-bottom: 2px;">センター - ${timeStr}</div><div>${escapeHtml(item.reply)}</div>`;
                     listEl.appendChild(replyMsg.cloneNode(true));
                     fullListEl.appendChild(replyMsg);
-                } else if (item.message) {
-                    // 返信がない場合の自分側のメッセージもfullListに追加
-                    const myMsg = document.createElement('div');
-                    myMsg.style.cssText = "align-self: flex-end; background: #dcf8c6; padding: 8px 12px; border-radius: 12px 12px 0 12px; max-width: 85%; font-size: 0.9rem; box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin-bottom: 5px;";
-                    myMsg.innerHTML = `<div style="font-size: 0.7rem; color: #777; margin-bottom: 2px;">送信済み - ${timeStr}</div><div>${escapeHtml(item.message)}</div>`;
-                    listEl.appendChild(myMsg.cloneNode(true));
-                    fullListEl.appendChild(myMsg);
                 }
             });
             // 最新のメッセージが見えるようにスクロールさせる場合はここに追加

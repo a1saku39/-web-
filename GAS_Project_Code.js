@@ -29,9 +29,11 @@ function doGet(e) {
 
         // スマホ側：その電話番号に関連する全ての返信付きデータを返す
         if (e.parameter.phone) {
+            var targetPhone = String(e.parameter.phone).trim();
             var history = result.filter(function (item) {
-                return item.phone === e.parameter.phone && (item.message || item.reply);
-            }).reverse().slice(0, 10); // 最新10件
+                var itemPhone = String(item.phone).trim();
+                return itemPhone === targetPhone && (item.message || item.reply);
+            }).reverse().slice(0, 5); // 直近5件に合わせる
 
             return ContentService.createTextOutput(JSON.stringify({
                 status: 'success',
