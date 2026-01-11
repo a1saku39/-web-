@@ -233,7 +233,7 @@ function renderData(data) {
         const messageText = item.message ? `<div style="font-size:0.8rem; color:#666; background:#f0f0f0; padding:4px; margin-top:4px;">${escapeHtml(item.message)}</div>` : "";
         const replyText = item.reply ? `<div style="font-size:0.8rem; color:#0e5a9c; background:#e8f4fd; padding:4px; margin-top:4px; border-left: 2px solid #007bff;">[返答]: ${escapeHtml(item.reply)}</div>` : "";
 
-        const statusBadge = `<span style="float:right; font-size:0.75rem; color:${item.status === '受付済み' ? '#28a745' : (item.status === '未承認' ? '#666' : '#856404')}">${item.status}</span>`;
+        const statusBadge = `<span style="float:right; font-size:0.75rem; color:${item.status === '返信済み' ? '#28a745' : (item.status === '却下済み' ? '#dc3545' : (item.status === '受付済み' ? '#21a038' : '#856404'))}">${item.status === '却下済み' ? 'キャンセル' : item.status}</span>`;
 
         const li = document.createElement('li');
         li.className = 'log-item';
@@ -242,32 +242,12 @@ function renderData(data) {
             <div class="log-name">${escapeHtml(item.name)}</div>
             ${messageText}
             ${replyText}
-            ${item.status === '未承認' ? `
-                <div style="margin-top:10px; display:flex; gap:5px;">
-                    <button class="btn" style="flex:1; padding:4px; background:#007bff; color:white; font-size:0.8rem;" onclick="event.stopPropagation(); moveRequestedToWaiting(${item.rowId}, '${escapeHtml(item.name)}')">管理へ送る</button>
-                    <button class="btn" style="flex:0.5; padding:4px; background:#6c757d; color:white; font-size:0.8rem;" onclick="event.stopPropagation(); hideRequest(${item.rowId})">却下</button>
-                </div>
-            ` : ''}
         `;
         li.onclick = () => {
             focusOnMap(item.lat, item.lng, item.name, item.reply);
         };
         listEl.appendChild(li);
     });
-}
-
-// 履歴から「受付管理」へ移動させる
-async function moveRequestedToWaiting(rowId, name) {
-    if (confirm(`${name} さんの依頼を受付管理へ移動しますか？`)) {
-        await fetch(GAS_API_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            body: JSON.stringify({ action: 'updateStatus', rowId: rowId, status: '受付待ち' })
-        });
-        alert('管理画面へ移動しました');
-        fetchData();
-        fetchReceptionData();
-    }
 }
 
 // 受付管理から取り消して「処理済み（取消）」に移動
@@ -283,18 +263,7 @@ async function cancelWaiting(rowId, name) {
     }
 }
 
-// 却下（非表示にするためのステータス変更）
-async function hideRequest(rowId) {
-    if (confirm(`この依頼を却下（非表示）にしますか？`)) {
-        await fetch(GAS_API_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            body: JSON.stringify({ action: 'updateStatus', rowId: rowId, status: '却下済み' })
-        });
-        fetchData();
-    }
-}
-
+// --- ユーティリティ ---
 function escapeHtml(text) {
     if (!text) return "";
     return text.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");

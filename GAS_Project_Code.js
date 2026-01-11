@@ -100,7 +100,7 @@ function doPost(e) {
         var lat = params.lat || '';
         var lng = params.lng || '';
         var message = params.message || '';
-        var status = '未承認';
+        var status = '受付待ち';
 
         sheet.appendRow([timestamp, name, phone, type, lat, lng, message, status, ""]);
 
