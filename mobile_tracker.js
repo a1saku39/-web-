@@ -22,8 +22,12 @@ function closeMenu() {
 function showPage(pageId) {
     document.getElementById('trackerScreen').classList.add('hidden');
     document.getElementById('accountScreen').classList.add('hidden');
+    document.getElementById('favoritesScreen').classList.add('hidden');
+    document.getElementById('sendHistoryScreen').classList.add('hidden');
     document.getElementById(pageId).classList.remove('hidden');
     if (pageId === 'trackerScreen' && map) setTimeout(() => map.invalidateSize(), 100);
+    if (pageId === 'favoritesScreen') renderFavorites();
+    if (pageId === 'sendHistoryScreen') checkReplies();
     closeMenu();
 }
 
@@ -72,12 +76,17 @@ async function checkReplies() {
 
         const historySection = document.getElementById('historySection');
         const listEl = document.getElementById('messageHistoryList');
+        const fullListEl = document.getElementById('fullHistoryList');
 
         if (json.status === 'success' && json.history && json.history.length > 0) {
             historySection.classList.remove('hidden');
             listEl.innerHTML = '';
+            fullListEl.innerHTML = '';
 
-            json.history.forEach(item => {
+            // 最近の5件に絞る
+            const recentHistory = json.history.slice(0, 5);
+
+            recentHistory.forEach(item => {
                 // 日付パースの安全策（スラッシュ区切りをハイフンに置換するなど）
                 let dateObj;
                 try {
@@ -101,7 +110,15 @@ async function checkReplies() {
                     const replyMsg = document.createElement('div');
                     replyMsg.style.cssText = "align-self: flex-start; background: #e8f4fd; padding: 8px 12px; border-radius: 12px 12px 12px 0; max-width: 85%; font-size: 0.9rem; border-left: 4px solid #007bff; box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin-top: 5px; margin-bottom: 5px;";
                     replyMsg.innerHTML = `<div style="font-size: 0.7rem; color: #007bff; font-weight: bold; margin-bottom: 2px;">センター - ${timeStr}</div><div>${escapeHtml(item.reply)}</div>`;
-                    listEl.appendChild(replyMsg);
+                    listEl.appendChild(replyMsg.cloneNode(true));
+                    fullListEl.appendChild(replyMsg);
+                } else if (item.message) {
+                    // 返信がない場合の自分側のメッセージもfullListに追加
+                    const myMsg = document.createElement('div');
+                    myMsg.style.cssText = "align-self: flex-end; background: #dcf8c6; padding: 8px 12px; border-radius: 12px 12px 0 12px; max-width: 85%; font-size: 0.9rem; box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin-bottom: 5px;";
+                    myMsg.innerHTML = `<div style="font-size: 0.7rem; color: #777; margin-bottom: 2px;">送信済み - ${timeStr}</div><div>${escapeHtml(item.message)}</div>`;
+                    listEl.appendChild(myMsg.cloneNode(true));
+                    fullListEl.appendChild(myMsg);
                 }
             });
             // 最新のメッセージが見えるようにスクロールさせる場合はここに追加
@@ -204,6 +221,58 @@ async function sendDataToGAS(data) {
         await fetch(GAS_API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
         return true;
     } catch (e) { return false; }
+}
+
+// --- お気に入り機能 ---
+function renderFavorites() {
+    const listEl = document.getElementById('favoritesList');
+    const favs = JSON.parse(localStorage.getItem('tracker_favorites') || '[]');
+    listEl.innerHTML = '';
+
+    if (favs.length === 0) {
+        listEl.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">登録された場所はありません</p>';
+        return;
+    }
+
+    favs.forEach((fav, index) => {
+        const item = document.createElement('div');
+        item.className = 'fav-item';
+        item.innerHTML = `
+            <div class="fav-info" onclick="applyFavorite(${fav.lat}, ${fav.lng}, '${escapeHtml(fav.name)}')">
+                <div class="fav-name">${escapeHtml(fav.name)}</div>
+                <div class="fav-addr">${escapeHtml(fav.address)}</div>
+            </div>
+            <button class="btn-delete" onclick="deleteFavorite(${index})">削除</button>
+        `;
+        listEl.appendChild(item);
+    });
+}
+
+function addFavorite() {
+    if (!currentLat || !currentLng) return alert('場所が指定されていません');
+    const address = document.getElementById('addressDisplay').textContent;
+    const name = prompt('この場所に名前をつけて保存しますか？\n(例: 自宅、会社など)', '');
+    if (!name) return;
+
+    const favs = JSON.parse(localStorage.getItem('tracker_favorites') || '[]');
+    favs.push({ name, address, lat: currentLat, lng: currentLng });
+    localStorage.setItem('tracker_favorites', JSON.stringify(favs));
+    alert('お気に入りに保存しました');
+}
+
+function applyFavorite(lat, lng, name) {
+    updateMapLocation(lat, lng);
+    showPage('trackerScreen');
+    document.getElementById('statusMessage').textContent = `お気に入り: ${name} を選択しました`;
+    setTimeout(() => document.getElementById('statusMessage').textContent = "", 3000);
+}
+
+function deleteFavorite(index) {
+    if (!confirm('このお気に入りを削除しますか？')) return;
+    const favs = JSON.parse(localStorage.getItem('tracker_favorites') || '[]');
+    favs.splice(index, 1);
+    localStorage.setItem('tracker_favorites', JSON.stringify(favs));
+    renderFavorites();
 }
 
 function escapeHtml(text) {
