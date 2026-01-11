@@ -107,7 +107,10 @@ function renderReceptionData(data) {
             ` : (item.status === '受付済み' ? `
                 <div class="reply-section" style="margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px;">
                     <textarea id="replyText_${item.rowId}" placeholder="スマホへ送信するメッセージを入力..." style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; box-sizing:border-box; font-size:0.85rem; height:60px;"></textarea>
-                    <button class="btn" style="background:#007bff; color:white; width:100%; margin-top:5px; padding:8px; font-size:0.85rem; font-weight:bold;" onclick="sendReply(${item.rowId}, '${escapeHtml(item.name)}')">メッセージを送信</button>
+                    <div style="display:flex; gap:10px; margin-top:5px;">
+                        <button class="btn" style="flex:1; background:#007bff; color:white; padding:8px; font-size:0.85rem; font-weight:bold;" onclick="sendReply(${item.rowId}, '${escapeHtml(item.name)}')">メッセージを送信</button>
+                        <button class="btn" style="flex:0.4; background:#dc3545; color:white; padding:8px; font-size:0.85rem;" onclick="cancelWaiting(${item.rowId}, '${escapeHtml(item.name)}')">取り消し</button>
+                    </div>
                 </div>
             ` : '')}
         `;
