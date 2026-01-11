@@ -93,14 +93,17 @@ function renderReceptionData(data) {
                 ${item.lat && item.lng ? `<div style="margin-top:5px;"><button class="btn" style="padding:4px 8px; font-size:0.75rem; background:#6c757d; color:white;" onclick="focusOnMap(${item.lat}, ${item.lng}, '${escapeHtml(item.name)}', '${escapeHtml(item.reply)}')">📍 地図で見る</button></div>` : ''}
             </div>
             
-            ${!isAccepted ? `
-                <button class="btn-accept" onclick="acceptReception('${escapeHtml(item.name)}', ${item.lat}, ${item.lng}, ${item.rowId})">受付する</button>
-            ` : `
+            ${item.status === '受付待ち' ? `
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <button class="btn-accept" style="flex:1;" onclick="acceptReception('${escapeHtml(item.name)}', ${item.lat}, ${item.lng}, ${item.rowId})">受付する</button>
+                    <button class="btn" style="flex:0.4; background:#dc3545; color:white; font-size:0.85rem;" onclick="cancelWaiting(${item.rowId}, '${escapeHtml(item.name)}')">取り消し</button>
+                </div>
+            ` : (item.status === '受付済み' ? `
                 <div class="reply-section" style="margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px;">
                     <textarea id="replyText_${item.rowId}" placeholder="スマホへ送信するメッセージを入力..." style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; box-sizing:border-box; font-size:0.85rem; height:60px;"></textarea>
                     <button class="btn" style="background:#007bff; color:white; width:100%; margin-top:5px; padding:8px; font-size:0.85rem; font-weight:bold;" onclick="sendReply(${item.rowId}, '${escapeHtml(item.name)}')">メッセージを送信</button>
                 </div>
-            `}
+            ` : '')}
         `;
         return card;
     };
@@ -244,6 +247,19 @@ async function moveRequestedToWaiting(rowId, name) {
             body: JSON.stringify({ action: 'updateStatus', rowId: rowId, status: '受付待ち' })
         });
         alert('管理画面へ移動しました');
+        fetchData();
+        fetchReceptionData();
+    }
+}
+
+// 受付管理から取り消して履歴に戻す
+async function cancelWaiting(rowId, name) {
+    if (confirm(`${name} さんの依頼の受付を取り消しますか？\n(履歴に戻ります)`)) {
+        await fetch(GAS_API_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify({ action: 'updateStatus', rowId: rowId, status: '未承認' })
+        });
         fetchData();
         fetchReceptionData();
     }
