@@ -71,7 +71,7 @@ function renderReceptionData(data) {
 
     const waitingData = data.filter(item => item.status === '受付待ち');
     const acceptedData = data.filter(item => item.status === '受付済み');
-    const sentData = data.filter(item => item.status === '返信済み');
+    const processedData = data.filter(item => item.status === '返信済み' || item.status === '却下済み');
 
     // 共通のカード生成関数
     const createCard = (item) => {
@@ -82,12 +82,13 @@ function renderReceptionData(data) {
         const acceptedTimeStr = item.acceptedTimestamp ? new Date(item.acceptedTimestamp).toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
         const sentTimeStr = item.sentTimestamp ? new Date(item.sentTimestamp).toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
         const isSent = item.status === '返信済み';
+        const isRejected = item.status === '却下済み';
 
         card.className = 'reception-card';
         card.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:10px;">
                 <h4 style="margin:0;">${escapeHtml(item.name)}</h4>
-                <span class="status-badge ${isSent ? 'status-accepted' : (isAccepted ? 'status-pending' : 'status-waiting')}">${item.status}</span>
+                <span class="status-badge ${isSent ? 'status-accepted' : (isRejected ? 'status-waiting' : (isAccepted ? 'status-pending' : 'status-waiting'))}">${item.status}</span>
             </div>
             <div class="reception-info">
                 <div><span class="info-label">受信日時:</span><span class="info-value">${timeStr}</span></div>
@@ -135,11 +136,11 @@ function renderReceptionData(data) {
         acceptedData.forEach(item => acceptedListEl.appendChild(createCard(item)));
     }
 
-    // 送信済みを描画
-    if (sentData.length === 0) {
-        sentListEl.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">送信済みの項目はありません</p>';
+    // 処理済みを描画
+    if (processedData.length === 0) {
+        sentListEl.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">処理済みの項目はありません</p>';
     } else {
-        sentData.forEach(item => sentListEl.appendChild(createCard(item)));
+        processedData.forEach(item => sentListEl.appendChild(createCard(item)));
     }
 }
 
@@ -261,13 +262,13 @@ async function moveRequestedToWaiting(rowId, name) {
     }
 }
 
-// 受付管理から取り消して履歴に戻す
+// 受付管理から取り消して「処理済み（取消）」に移動
 async function cancelWaiting(rowId, name) {
-    if (confirm(`${name} さんの依頼の受付を取り消しますか？\n(履歴に戻ります)`)) {
+    if (confirm(`${name} さんの依頼を「取消（処理済み）」へ移動しますか？`)) {
         await fetch(GAS_API_URL, {
             method: 'POST',
             mode: 'no-cors',
-            body: JSON.stringify({ action: 'updateStatus', rowId: rowId, status: '未承認' })
+            body: JSON.stringify({ action: 'updateStatus', rowId: rowId, status: '却下済み' })
         });
         fetchData();
         fetchReceptionData();

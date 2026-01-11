@@ -375,7 +375,7 @@
         <div class="menu-header">メニュー</div>
         <ul class="menu-list">
             <li class="menu-item" onclick="toggleReception()">📥 受付管理パネルの表示/非表示</li>
-            <li class="menu-item" onclick="toggleSentPanel()">✉ 送信済み管理パネルの表示/非表示</li>
+            <li class="menu-item" onclick="toggleSentPanel()">✅ 処理済み管理パネルの表示/非表示</li>
             <li class="menu-item" onclick="toggleHistory()">📋 受信履歴の表示/非表示</li>
         </ul>
     </div>
@@ -410,11 +410,11 @@
 
         <div class="sent-panel hidden" id="sentPanel">
             <div class="section-header header-sent">
-                <span>✉ 送信済み管理 (返信完了)</span>
+                <span>✅ 処理済み管理 (送信済み・取消)</span>
                 <button class="close-btn" onclick="toggleSentPanel()">×</button>
             </div>
             <div class="reception-content" id="sentMessageList">
-                <p style="text-align: center; color: #999; padding: 20px;">送信済みの項目はありません</p>
+                <p style="text-align: center; color: #999; padding: 20px;">処理済みの項目はありません</p>
             </div>
         </div>
 
