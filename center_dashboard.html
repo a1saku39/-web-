@@ -137,12 +137,34 @@
 
         /* Reception Panel */
         .reception-panel {
-            width: 380px;
-            background: white;
+            width: 400px;
+            background: #fff;
             border-right: 1px solid #ddd;
             display: flex;
             flex-direction: column;
             transition: margin-left 0.3s ease;
+        }
+
+        .section-header {
+            padding: 12px 15px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+        }
+
+        .header-waiting {
+            background: #fff3cd;
+            color: #856404;
+            border-bottom: 1px solid #ffeeba;
+        }
+
+        .header-accepted {
+            background: #d4edda;
+            color: #155724;
+            border-top: 1px solid #c3e6cb;
+            border-bottom: 1px solid #c3e6cb;
         }
 
         .reception-panel.hidden {
@@ -329,9 +351,20 @@
 
     <div class="main-content">
         <div class="reception-panel hidden" id="receptionPanel">
-            <div class="panel-header">受付管理</div>
-            <div class="reception-content" id="receptionList">
-                <p style="text-align: center; color: #999; padding: 20px;">受付待ち項目はありません</p>
+            <!-- 受付管理 (待機中) -->
+            <div class="section-header header-waiting">
+                <span>📥 受付管理 (未対応)</span>
+            </div>
+            <div class="reception-content" id="receptionWaitingList">
+                <p style="text-align: center; color: #999; padding: 20px;">未対応の項目はありません</p>
+            </div>
+
+            <!-- 送信済み管理 (対応済み) -->
+            <div class="section-header header-accepted">
+                <span>✅ 送信済み管理 (対応済み)</span>
+            </div>
+            <div class="reception-content" id="receptionAcceptedList">
+                <p style="text-align: center; color: #999; padding: 20px;">対応済みの項目はありません</p>
             </div>
         </div>
 

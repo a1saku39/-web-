@@ -54,40 +54,73 @@ function fetchReceptionData() {
 }
 
 function renderReceptionData(data) {
-    const listEl = document.getElementById('receptionList');
-    listEl.innerHTML = '';
-    if (data.length === 0) {
-        listEl.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">受付待ち項目はありません</p>';
-        return;
-    }
-    data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const waitingListEl = document.getElementById('receptionWaitingList');
+    const acceptedListEl = document.getElementById('receptionAcceptedList');
 
-    data.forEach((item) => {
+    waitingListEl.innerHTML = '';
+    acceptedListEl.innerHTML = '';
+
+    const waitingData = data.filter(item => item.status !== '受付済み');
+    const acceptedData = data.filter(item => item.status === '受付済み');
+
+    // 共通のカード生成関数
+    const createCard = (item) => {
         const timeStr = new Date(item.timestamp).toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
         const isAccepted = item.status === '受付済み';
 
         const card = document.createElement('div');
         card.className = 'reception-card';
         card.innerHTML = `
-            <h4>${escapeHtml(item.name)}<span class="status-badge ${isAccepted ? 'status-accepted' : 'status-pending'}">${item.status}</span></h4>
+            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:10px;">
+                <h4 style="margin:0;">${escapeHtml(item.name)}</h4>
+                <span class="status-badge ${isAccepted ? 'status-accepted' : 'status-pending'}">${item.status}</span>
+            </div>
             <div class="reception-info">
                 <div><span class="info-label">受信日時:</span><span class="info-value">${timeStr}</span></div>
                 <div><span class="info-label">電話番号:</span><span class="info-value">${escapeHtml(item.phone)}</span></div>
                 ${item.message ? `<div><span class="info-label">メッセージ:</span><span class="info-value">${escapeHtml(item.message)}</span></div>` : ''}
-                ${item.reply ? `<div style="margin-top:8px; display:block;"><span class="info-label">返信済み:</span><div class="info-value" style="background:#e8f4fd; padding:5px; border-radius:4px; font-size:0.85rem;">${escapeHtml(item.reply)}</div></div>` : ''}
+                ${item.reply ? `<div style="margin-top:8px; display:block;"><span class="info-label">返信済み:</span><div class="info-value" style="background:#e8f4fd; padding:12px; border-radius:4px; font-size:0.85rem; border-left: 3px solid #007bff;">${escapeHtml(item.reply)}</div></div>` : ''}
+                ${item.lat && item.lng ? `<div style="margin-top:5px;"><button class="btn" style="padding:4px 8px; font-size:0.75rem; background:#6c757d; color:white;" onclick="focusOnMap(${item.lat}, ${item.lng}, '${escapeHtml(item.name)}', '${escapeHtml(item.reply)}')">📍 地図で見る</button></div>` : ''}
             </div>
             
             ${!isAccepted ? `
                 <button class="btn-accept" onclick="acceptReception('${escapeHtml(item.name)}', ${item.lat}, ${item.lng}, ${item.rowId})">受付する</button>
             ` : `
                 <div class="reply-section" style="margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px;">
-                    <textarea id="replyText_${item.rowId}" placeholder="スマホへ返信を入力..." style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; box-sizing:border-box; font-size:0.85rem; height:60px;"></textarea>
-                    <button class="btn" style="background:#007bff; color:white; width:100%; margin-top:5px; padding:6px; font-size:0.85rem;" onclick="sendReply(${item.rowId}, '${escapeHtml(item.name)}')">返信を送信</button>
+                    <textarea id="replyText_${item.rowId}" placeholder="スマホへ送信するメッセージを入力..." style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; box-sizing:border-box; font-size:0.85rem; height:60px;"></textarea>
+                    <button class="btn" style="background:#007bff; color:white; width:100%; margin-top:5px; padding:8px; font-size:0.85rem; font-weight:bold;" onclick="sendReply(${item.rowId}, '${escapeHtml(item.name)}')">メッセージを送信</button>
                 </div>
             `}
         `;
-        listEl.appendChild(card);
-    });
+        return card;
+    };
+
+    // 並び替え（最新順）
+    waitingData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    acceptedData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    // 受付待ちを描画
+    if (waitingData.length === 0) {
+        waitingListEl.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">未対応の項目はありません</p>';
+    } else {
+        waitingData.forEach(item => waitingListEl.appendChild(createCard(item)));
+    }
+
+    // 対応済みを描画
+    if (acceptedData.length === 0) {
+        acceptedListEl.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">対応済みの項目はありません</p>';
+    } else {
+        acceptedData.forEach(item => acceptedListEl.appendChild(createCard(item)));
+    }
+}
+
+// 地図を特定の場所に移動させるヘルパー関数
+function focusOnMap(lat, lng, name, reply) {
+    if (!lat || !lng) return;
+    markersSource.forEach(m => { if (map.hasLayer(m)) map.removeLayer(m); });
+    const marker = L.marker([lat, lng]).addTo(map).bindPopup(`<b>${name}</b><br>${reply ? '返信済: ' + reply : '受付済'}`).openPopup();
+    markersSource.push(marker);
+    map.flyTo([lat, lng], 16);
 }
 
 async function acceptReception(name, lat, lng, rowId) {
