@@ -6,8 +6,7 @@ let currentLat, currentLng, gpsLat, gpsLng, gpsCircle, connectionLine;
 
 document.addEventListener('DOMContentLoaded', () => {
     checkSettings();
-    // 30秒ごとに返信をチェック
-    setInterval(checkReplies, 30000);
+    setInterval(checkReplies, 30000); // 30秒ごとに履歴を更新
 });
 
 function toggleMenu() {
@@ -37,7 +36,7 @@ function checkSettings() {
         document.getElementById('setupScreen').classList.add('hidden');
         document.getElementById('trackerScreen').classList.remove('hidden');
         initMap();
-        checkReplies(); // 起動時に返信確認
+        checkReplies();
     } else {
         document.getElementById('setupScreen').classList.remove('hidden');
         document.getElementById('trackerScreen').classList.add('hidden');
@@ -70,14 +69,33 @@ async function checkReplies() {
     try {
         const response = await fetch(`${GAS_API_URL}?phone=${encodeURIComponent(phone)}`);
         const json = await response.json();
-        const replyBox = document.getElementById('replyBox');
-        const replyMsg = document.getElementById('replyMessage');
 
-        if (json.status === 'success' && json.reply) {
-            replyMsg.textContent = json.reply;
-            replyBox.classList.remove('hidden');
-        } else {
-            replyBox.classList.add('hidden');
+        const historySection = document.getElementById('historySection');
+        const listEl = document.getElementById('messageHistoryList');
+
+        if (json.status === 'success' && json.history && json.history.length > 0) {
+            historySection.classList.remove('hidden');
+            listEl.innerHTML = '';
+
+            json.history.forEach(item => {
+                const timeStr = new Date(item.timestamp).toLocaleString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+
+                // 自分が送信したメッセージ
+                if (item.message) {
+                    const myMsg = document.createElement('div');
+                    myMsg.style.cssText = "align-self: flex-end; background: #dcf8c6; padding: 8px 12px; border-radius: 12px 12px 0 12px; max-width: 85%; font-size: 0.9rem; box-shadow: 0 1px 2px rgba(0,0,0,0.1);";
+                    myMsg.innerHTML = `<div style="font-size: 0.7rem; color: #777; margin-bottom: 2px;">送信済み - ${timeStr}</div><div>${escapeHtml(item.message)}</div>`;
+                    listEl.appendChild(myMsg);
+                }
+
+                // センターからの返信
+                if (item.reply) {
+                    const replyMsg = document.createElement('div');
+                    replyMsg.style.cssText = "align-self: flex-start; background: #e8f4fd; padding: 8px 12px; border-radius: 12px 12px 12px 0; max-width: 85%; font-size: 0.9rem; border-left: 4px solid #007bff; box-shadow: 0 1px 2px rgba(0,0,0,0.1);";
+                    replyMsg.innerHTML = `<div style="font-size: 0.7rem; color: #007bff; font-weight: bold; margin-bottom: 2px;">センター - ${timeStr}</div><div>${escapeHtml(item.reply)}</div>`;
+                    listEl.appendChild(replyMsg);
+                }
+            });
         }
     } catch (e) {
         console.error("Reply check error:", e);
@@ -85,10 +103,7 @@ async function checkReplies() {
 }
 
 function initMap() {
-    if (map) return;
-    map = L.map('map').setView([35.6895, 139.6917], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
-    map.on('click', (e) => updateMapLocation(e.latlng.lat, e.latlng.lng));
+    // 地図は非表示にしたので初期化のみ安全に行うか、あるいは何もしない
     refreshLocation();
 }
 
@@ -98,10 +113,8 @@ function refreshLocation() {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition((position) => {
             gpsLat = position.coords.latitude; gpsLng = position.coords.longitude;
-            if (gpsCircle) map.removeLayer(gpsCircle);
-            gpsCircle = L.circleMarker([gpsLat, gpsLng], { radius: 6, fillColor: "#4285F4", color: "#fff", weight: 2, fillOpacity: 1 }).addTo(map);
             updateMapLocation(gpsLat, gpsLng);
-            status.textContent = "現在地を更新しました";
+            status.textContent = "住所を取得しました";
             setTimeout(() => status.textContent = "", 3000);
         }, (error) => {
             status.textContent = "現在地の取得に失敗: " + error.message;
@@ -111,29 +124,23 @@ function refreshLocation() {
 
 function updateMapLocation(lat, lng) {
     currentLat = lat; currentLng = lng;
-    const latLng = [lat, lng];
-    map.setView(latLng, 16);
-    if (marker) {
-        marker.setLatLng(latLng);
-    } else {
-        marker = L.marker(latLng, { draggable: true }).addTo(map).bindPopup('住所を取得中...').openPopup();
-        marker.on('dragend', (e) => {
-            const pos = marker.getLatLng();
-            updateMapLocation(pos.lat, pos.lng);
-        });
-    }
-    updateConnectionLine();
     fetchAddress(lat, lng);
 }
 
 function fetchAddress(lat, lng) {
     const addressEl = document.getElementById('addressDisplay');
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+    if (addressEl) addressEl.textContent = "住所を取得中...";
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ja`)
         .then(res => res.json())
         .then(data => {
-            let addr = data.display_name.replace(/,?\s*日本\s*$/g, '').replace(/,?\s*Japan\s*$/gi, '');
-            if (marker) marker.setPopupContent(addr).openPopup();
-            addressEl.textContent = addr;
+            let addr = "";
+            if (data.address) {
+                const a = data.address;
+                const parts = [a.province || a.state, a.city || a.town || a.village, a.suburb || a.neighbourhood, a.road, a.house_number].filter(Boolean);
+                addr = parts.join('');
+            }
+            if (!addr) addr = data.display_name.replace(/,?\s*日本\s*$/g, '').replace(/,?\s*Japan\s*$/gi, '');
+            if (addressEl) addressEl.textContent = addr;
         });
 }
 
@@ -156,8 +163,11 @@ function sendLocation() {
         timestamp: new Date().toISOString()
     };
     sendDataToGAS(data).then(success => {
-        status.textContent = success ? "送信完了 (" + new Date().toLocaleTimeString() + ")" : "送信失敗";
-        if (success) document.getElementById('userMessage').value = "";
+        status.textContent = success ? "送信完了" : "送信失敗";
+        if (success) {
+            document.getElementById('userMessage').value = "";
+            checkReplies(); // 送信直後に更新
+        }
         btn.disabled = false;
     });
 }
@@ -167,4 +177,9 @@ async function sendDataToGAS(data) {
         await fetch(GAS_API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
         return true;
     } catch (e) { return false; }
+}
+
+function escapeHtml(text) {
+    if (!text) return "";
+    return text.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }

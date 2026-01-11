@@ -164,21 +164,21 @@
         }
 
         #map {
-            height: 350px;
-            width: 100%;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            z-index: 1;
+            display: none;
+            /* 地図を非表示にする */
         }
 
         #addressDisplay {
-            font-size: 14px;
-            background: #f8f9fa;
-            padding: 10px;
+            font-size: 1.1rem;
+            /* 住所を少し大きく */
+            font-weight: bold;
+            background: #fff;
+            padding: 15px;
             border-radius: 8px;
             margin-bottom: 15px;
-            border: 1px solid #ddd;
+            border: 2px solid #007bff;
             color: #333;
+            text-align: center;
         }
 
         #statusMessage {
@@ -253,13 +253,6 @@
         </div>
 
         <div id="trackerScreen" class="hidden">
-            <!-- Reply Box (Hidden by default) -->
-            <div id="replyBox" class="card hidden" style="border-left: 5px solid #007bff; background: #e8f4fd;">
-                <div style="font-size: 0.8rem; color: #007bff; font-weight: bold; margin-bottom: 5px;">センターからのメッセージ
-                </div>
-                <div id="replyMessage" style="font-size: 1.1rem; color: #333; font-weight: 500;"></div>
-            </div>
-
             <div class="card">
                 <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
                     <button class="btn"
@@ -278,6 +271,16 @@
 
                 <button class="btn btn-success" id="sendLocationBtn" onclick="sendLocation()">現在地を送信</button>
                 <div id="statusMessage"></div>
+            </div>
+
+            <!-- Message History Section -->
+            <div id="historySection" class="card hidden">
+                <h3
+                    style="margin-top: 0; font-size: 1rem; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 5px;">
+                    やり取りの履歴</h3>
+                <div id="messageHistoryList" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- History items will be injected here -->
+                </div>
             </div>
         </div>
 

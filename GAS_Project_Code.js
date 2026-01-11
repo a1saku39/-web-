@@ -21,22 +21,19 @@ function doGet(e) {
                 lng: row[5],
                 message: row[6] ? row[6] : "",
                 status: row[7] ? row[7] : "受付待ち",
-                reply: row[8] ? row[8] : "" // 9列目を返信内容として取得
+                reply: row[8] ? row[8] : ""
             };
         });
 
-        // スマホ側からの特定の電話番号に対する最新の返信取得用クエリへの対応
+        // スマホ側：その電話番号に関連する全ての返信付きデータを返す
         if (e.parameter.phone) {
-            var latestReply = "";
-            for (var i = result.length - 1; i >= 0; i--) {
-                if (result[i].phone === e.parameter.phone && result[i].reply) {
-                    latestReply = result[i].reply;
-                    break;
-                }
-            }
+            var history = result.filter(function (item) {
+                return item.phone === e.parameter.phone && (item.message || item.reply);
+            }).reverse().slice(0, 10); // 最新10件
+
             return ContentService.createTextOutput(JSON.stringify({
                 status: 'success',
-                reply: latestReply
+                history: history
             })).setMimeType(ContentService.MimeType.JSON);
         }
 
@@ -57,6 +54,7 @@ function doGet(e) {
     }
 }
 
+// ... doPost, setupSheet は変更なし ...
 function doPost(e) {
     try {
         var params;
@@ -68,14 +66,13 @@ function doPost(e) {
 
         var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
 
-        // ステータス更新または返信の送信
         if (params.action === 'updateStatus' || params.action === 'sendReply') {
             var rowId = params.rowId;
             if (params.action === 'updateStatus') {
                 sheet.getRange(rowId, 8).setValue('受付済み');
             }
             if (params.reply) {
-                sheet.getRange(rowId, 9).setValue(params.reply); // 9列目に返信を保存
+                sheet.getRange(rowId, 9).setValue(params.reply);
             }
             return ContentService.createTextOutput(JSON.stringify({
                 status: 'success',
@@ -83,7 +80,6 @@ function doPost(e) {
             })).setMimeType(ContentService.MimeType.JSON);
         }
 
-        // 新規登録
         var timestamp = Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyy/MM/dd HH:mm:ss");
         var name = params.name || '';
         var phone = params.phone || '';
