@@ -78,12 +78,20 @@ async function checkReplies() {
             listEl.innerHTML = '';
 
             json.history.forEach(item => {
-                const timeStr = new Date(item.timestamp).toLocaleString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+                // 日付パースの安全策（スラッシュ区切りをハイフンに置換するなど）
+                let dateObj;
+                try {
+                    const safeTime = item.timestamp ? item.timestamp.replace(/\//g, '-') : null;
+                    dateObj = safeTime ? new Date(safeTime) : new Date();
+                } catch (e) {
+                    dateObj = new Date();
+                }
+                const timeStr = dateObj.toLocaleString('ja-JP', { hour: '2-digit', minute: '2-digit' });
 
                 // 自分が送信したメッセージ
                 if (item.message) {
                     const myMsg = document.createElement('div');
-                    myMsg.style.cssText = "align-self: flex-end; background: #dcf8c6; padding: 8px 12px; border-radius: 12px 12px 0 12px; max-width: 85%; font-size: 0.9rem; box-shadow: 0 1px 2px rgba(0,0,0,0.1);";
+                    myMsg.style.cssText = "align-self: flex-end; background: #dcf8c6; padding: 8px 12px; border-radius: 12px 12px 0 12px; max-width: 85%; font-size: 0.9rem; box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin-bottom: 5px;";
                     myMsg.innerHTML = `<div style="font-size: 0.7rem; color: #777; margin-bottom: 2px;">送信済み - ${timeStr}</div><div>${escapeHtml(item.message)}</div>`;
                     listEl.appendChild(myMsg);
                 }
@@ -91,11 +99,12 @@ async function checkReplies() {
                 // センターからの返信
                 if (item.reply) {
                     const replyMsg = document.createElement('div');
-                    replyMsg.style.cssText = "align-self: flex-start; background: #e8f4fd; padding: 8px 12px; border-radius: 12px 12px 12px 0; max-width: 85%; font-size: 0.9rem; border-left: 4px solid #007bff; box-shadow: 0 1px 2px rgba(0,0,0,0.1);";
+                    replyMsg.style.cssText = "align-self: flex-start; background: #e8f4fd; padding: 8px 12px; border-radius: 12px 12px 12px 0; max-width: 85%; font-size: 0.9rem; border-left: 4px solid #007bff; box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin-top: 5px; margin-bottom: 5px;";
                     replyMsg.innerHTML = `<div style="font-size: 0.7rem; color: #007bff; font-weight: bold; margin-bottom: 2px;">センター - ${timeStr}</div><div>${escapeHtml(item.reply)}</div>`;
                     listEl.appendChild(replyMsg);
                 }
             });
+            // 最新のメッセージが見えるようにスクロールさせる場合はここに追加
         }
     } catch (e) {
         console.error("Reply check error:", e);
@@ -103,7 +112,10 @@ async function checkReplies() {
 }
 
 function initMap() {
-    // 地図は非表示にしたので初期化のみ安全に行うか、あるいは何もしない
+    if (map) return;
+    map = L.map('map').setView([35.6895, 139.6917], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+    map.on('click', (e) => updateMapLocation(e.latlng.lat, e.latlng.lng));
     refreshLocation();
 }
 
@@ -113,8 +125,10 @@ function refreshLocation() {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition((position) => {
             gpsLat = position.coords.latitude; gpsLng = position.coords.longitude;
+            if (gpsCircle) map.removeLayer(gpsCircle);
+            gpsCircle = L.circleMarker([gpsLat, gpsLng], { radius: 6, fillColor: "#4285F4", color: "#fff", weight: 2, fillOpacity: 1 }).addTo(map);
             updateMapLocation(gpsLat, gpsLng);
-            status.textContent = "住所を取得しました";
+            status.textContent = "現在地を更新しました";
             setTimeout(() => status.textContent = "", 3000);
         }, (error) => {
             status.textContent = "現在地の取得に失敗: " + error.message;
@@ -124,6 +138,18 @@ function refreshLocation() {
 
 function updateMapLocation(lat, lng) {
     currentLat = lat; currentLng = lng;
+    const latLng = [lat, lng];
+    map.setView(latLng, 16);
+    if (marker) {
+        marker.setLatLng(latLng);
+    } else {
+        marker = L.marker(latLng, { draggable: true }).addTo(map).bindPopup('住所を取得中...').openPopup();
+        marker.on('dragend', (e) => {
+            const pos = marker.getLatLng();
+            updateMapLocation(pos.lat, pos.lng);
+        });
+    }
+    updateConnectionLine();
     fetchAddress(lat, lng);
 }
 
@@ -140,6 +166,7 @@ function fetchAddress(lat, lng) {
                 addr = parts.join('');
             }
             if (!addr) addr = data.display_name.replace(/,?\s*日本\s*$/g, '').replace(/,?\s*Japan\s*$/gi, '');
+            if (marker) marker.setPopupContent(addr).openPopup();
             if (addressEl) addressEl.textContent = addr;
         });
 }
