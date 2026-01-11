@@ -181,8 +181,26 @@
             transition: none;
         }
 
-        .sidebar.hidden {
+        .reception-panel.hidden,
+        .sidebar.hidden,
+        .sent-panel.hidden {
             display: none;
+        }
+
+        /* Sent Management Panel */
+        .sent-panel {
+            width: 400px;
+            background: #fff;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            transition: none;
+        }
+
+        .header-sent {
+            background: #e1f5fe;
+            color: #01579b;
+            border-bottom: 2px solid #81d4fa;
         }
 
         .panel-header {
@@ -336,7 +354,8 @@
     <div id="menuSidebar" class="menu-sidebar">
         <div class="menu-header">メニュー</div>
         <ul class="menu-list">
-            <li class="menu-item" onclick="toggleReception()">📥 受付パネルの表示/非表示</li>
+            <li class="menu-item" onclick="toggleReception()">📥 受付管理パネルの表示/非表示</li>
+            <li class="menu-item" onclick="toggleSentPanel()">✉ 送信済み管理パネルの表示/非表示</li>
             <li class="menu-item" onclick="toggleHistory()">📋 受信履歴の表示/非表示</li>
         </ul>
     </div>
@@ -351,7 +370,7 @@
 
     <div class="main-content">
         <div class="reception-panel hidden" id="receptionPanel">
-            <!-- 受付管理 (待機中) -->
+            <!-- 受付管理 (未対応) -->
             <div class="section-header header-waiting">
                 <span>📥 受付管理 (未対応)</span>
             </div>
@@ -359,12 +378,21 @@
                 <p style="text-align: center; color: #999; padding: 20px;">未対応の項目はありません</p>
             </div>
 
-            <!-- 送信済み管理 (対応済み) -->
+            <!-- 受付管理 (受付済み) -->
             <div class="section-header header-accepted">
-                <span>✅ 送信済み管理 (対応済み)</span>
+                <span>✅ 受付管理 (受付済み)</span>
             </div>
             <div class="reception-content" id="receptionAcceptedList">
-                <p style="text-align: center; color: #999; padding: 20px;">対応済みの項目はありません</p>
+                <p style="text-align: center; color: #999; padding: 20px;">受付済みの項目はありません</p>
+            </div>
+        </div>
+
+        <div class="sent-panel hidden" id="sentPanel">
+            <div class="section-header header-sent">
+                <span>✉ 送信済み管理 (返信完了)</span>
+            </div>
+            <div class="reception-content" id="sentMessageList">
+                <p style="text-align: center; color: #999; padding: 20px;">送信済みの項目はありません</p>
             </div>
         </div>
 

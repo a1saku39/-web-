@@ -242,10 +242,18 @@ function renderFavorites() {
                 <div class="fav-name">${escapeHtml(fav.name)}</div>
                 <div class="fav-addr">${escapeHtml(fav.address)}</div>
             </div>
-            <button class="btn-delete" onclick="deleteFavorite(${index})">削除</button>
+            <div style="display:flex; flex-direction:column; gap:5px;">
+                <button class="btn" style="padding:4px 8px; font-size:11px; background:#6c757d; color:white;" onclick="focusOnMapFav(${fav.lat}, ${fav.lng}, '${escapeHtml(fav.name)}')">地図</button>
+                <button class="btn-delete" onclick="deleteFavorite(${index})">削除</button>
+            </div>
         `;
         listEl.appendChild(item);
     });
+}
+
+function focusOnMapFav(lat, lng, name) {
+    updateMapLocation(lat, lng);
+    showPage('trackerScreen');
 }
 
 function addFavorite() {

@@ -74,6 +74,7 @@ function doPost(e) {
             }
             if (params.reply) {
                 sheet.getRange(rowId, 9).setValue(params.reply);
+                sheet.getRange(rowId, 8).setValue('返信済み');
             }
             return ContentService.createTextOutput(JSON.stringify({
                 status: 'success',

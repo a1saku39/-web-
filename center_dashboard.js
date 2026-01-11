@@ -35,9 +35,16 @@ function toggleHistory() {
 
 function toggleReception() {
     const panel = document.getElementById('receptionPanel');
-    const isHidden = panel.classList.contains('hidden');
     panel.classList.toggle('hidden');
-    if (isHidden) fetchReceptionData();
+    if (!panel.classList.contains('hidden')) fetchReceptionData();
+    if (map) map.invalidateSize();
+    closeMenu();
+}
+
+function toggleSentPanel() {
+    const panel = document.getElementById('sentPanel');
+    panel.classList.toggle('hidden');
+    if (!panel.classList.contains('hidden')) fetchReceptionData();
     if (map) map.invalidateSize();
     closeMenu();
 }
@@ -56,12 +63,15 @@ function fetchReceptionData() {
 function renderReceptionData(data) {
     const waitingListEl = document.getElementById('receptionWaitingList');
     const acceptedListEl = document.getElementById('receptionAcceptedList');
+    const sentListEl = document.getElementById('sentMessageList');
 
     waitingListEl.innerHTML = '';
     acceptedListEl.innerHTML = '';
+    sentListEl.innerHTML = '';
 
     const waitingData = data.filter(item => item.status === '受付待ち');
     const acceptedData = data.filter(item => item.status === '受付済み');
+    const sentData = data.filter(item => item.status === '返信済み');
 
     // 共通のカード生成関数
     const createCard = (item) => {
@@ -106,11 +116,18 @@ function renderReceptionData(data) {
         waitingData.forEach(item => waitingListEl.appendChild(createCard(item)));
     }
 
-    // 対応済みを描画
+    // 受付済みを描画
     if (acceptedData.length === 0) {
-        acceptedListEl.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">対応済みの項目はありません</p>';
+        acceptedListEl.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">受付済みの項目はありません</p>';
     } else {
         acceptedData.forEach(item => acceptedListEl.appendChild(createCard(item)));
+    }
+
+    // 送信済みを描画
+    if (sentData.length === 0) {
+        sentListEl.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">送信済みの項目はありません</p>';
+    } else {
+        sentData.forEach(item => sentListEl.appendChild(createCard(item)));
     }
 }
 
